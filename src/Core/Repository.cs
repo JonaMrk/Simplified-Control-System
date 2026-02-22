@@ -69,19 +69,41 @@ namespace Core
             return Path.Combine(RepoPath, ".gitlite", "HEAD");
         }
 
-        private string ReadHead()
+        private string ReadHeadsDir()
+        {
+            return Path.Combine(RepoPath, ".gitlite", "refs", "heads");
+        }
+
+        private string ReadCurrentBranch()
         {
             string headPath = GetHeadPath();
             if (!File.Exists(headPath))
-                return "";
-            return File.ReadAllText(headPath);
+                return "main";
+            return File.ReadAllText(headPath).Trim();
         }
 
-
-        private void WriteHead(string commitId)
+        private void WriteCurrentBranch(string branchName)
         {
-            string headPath = GetHeadPath();
-            File.WriteAllText(headPath, commitId);
+            File.WriteAllText(GetHeadPath(), branchName);
+        }
+        
+        private string GetBranchRefPath(string branchName)
+        {
+            return Path.Combine(GetHeadsDir(), branchName);
+        }
+        
+        private string ReadBranchHeadCommitId(string branchName)
+        {
+            string refPath = GetBranchRefPath(branchName);
+            if (!File.Exists(refPath))
+                return "";
+            return File.ReadAllText(refPath).Trim();
+        }
+        
+        private void WriteBranchHeadCommitId(string branchName, string commitId)
+        {
+            string refPath = GetBranchRefPath(branchName);
+            File.WriteAllText(refPath, commitId);
         }
 
         private Commit LoadCommit(string commitId)
