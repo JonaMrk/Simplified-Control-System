@@ -32,6 +32,13 @@ namespace Core
 
             // HEAD will store the current branch name
             File.WriteAllText(Path.Combine(RepoPath, ".gitlite", "HEAD"), "main");
+            
+             // Create index file for file tracking
+            string indexPath = Path.Combine(RepoPath, ".gitlite", "index");
+            if (!File.Exists(indexPath))
+            {
+                File.WriteAllText(indexPath, "");
+            }
         }
 
         public Commit CreateCommit(string message)
