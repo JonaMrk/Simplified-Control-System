@@ -36,7 +36,8 @@ namespace Core
 
         public Commit CreateCommit(string message)
         {
-            string parentCommitId = ReadHead();
+            string branchName = ReadCurrentBranch();
+            string parentCommitId = ReadBranchHeadCommitId(branchName);
             
             string content = message + DateTime.Now.ToString("O");
             string commitId = Hasher.ComputeHash(content);
@@ -44,7 +45,7 @@ namespace Core
             Commit commit = new Commit(commitId, parentCommitId, message);
             
             SaveCommit(commit);
-            WriteHead(commitId);
+            WriteBranchHeadCommitId(branchName, commitId);
             
             return commit;
         }
