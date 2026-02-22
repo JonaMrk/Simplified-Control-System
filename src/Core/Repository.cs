@@ -122,9 +122,46 @@ namespace Core
             return new Commit(commitId, parent, message);
         }
 
+        public void CreateBranch(string branchName)
+        {
+            Directory.CreateDirectory(GetHeadsDir());
+        
+            string refPath = GetBranchRefPath(branchName);
+            if (File.Exists(refPath))
+                return;
+        
+            string currentBranch = ReadCurrentBranch();
+            string currentCommitId = ReadBranchHeadCommitId(currentBranch);
+        
+            File.WriteAllText(refPath, currentCommitId);
+        }
+        
+        public string[] ListBranches()
+        {
+            string dir = GetHeadsDir();
+            if (!Directory.Exists(dir))
+                return Array.Empty<string>();
+        
+            string[] files = Directory.GetFiles(dir);
+            for (int i = 0; i < files.Length; i++)
+                files[i] = Path.GetFileName(files[i]);
+        
+            return files;
+        }
+        
+        public void CheckoutBranch(string branchName)
+        {
+            string refPath = GetBranchRefPath(branchName);
+            if (!File.Exists(refPath))
+                return;
+        
+            WriteCurrentBranch(branchName);
+        }
+
         public void PrintLog()
         {
-            string currentId = ReadHead();
+            string branchName = ReadCurrentBranch();
+            string currentId = ReadBranchHeadCommitId(branchName);
 
             if (string.IsNullOrEmpty(currentId))
             {
