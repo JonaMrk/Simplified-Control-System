@@ -21,15 +21,18 @@ namespace Core
             Directory.CreateDirectory(Path.Combine(RepoPath, ".gitlite", "refs"));
         }
 
-        public Commit CreateCommit(string message, string parentCommitId = "")
+        public Commit CreateCommit(string message)
         {
-            // Commit ID is derived from content + timestamp (I left it as a simple approach for now)
+            string parentCommitId = ReadHead();
+            
             string content = message + DateTime.Now.ToString("O");
             string commitId = Hasher.ComputeHash(content);
-
+            
             Commit commit = new Commit(commitId, parentCommitId, message);
+            
             SaveCommit(commit);
-
+            WriteHead(commitId);
+            
             return commit;
         }
 
@@ -47,6 +50,25 @@ namespace Core
                 "Timestamp: " + commit.Timestamp;
 
             File.WriteAllText(commitFilePath, fileContent);
+        }
+        private string GetHeadPath()
+        {
+            return Path.Combine(RepoPath, ".gitlite", "HEAD");
+        }
+
+        private string ReadHead()
+        {
+            string headPath = GetHeadPath();
+            if (!File.Exists(headPath))
+                return "";
+            return File.ReadAllText(headPath);
+        }
+
+
+        private void WriteHead(string commitId)
+        {
+            string headPath = GetHeadPath();
+            File.WriteAllText(headPath, commitId);
         }
 
         public void PrintLog()
