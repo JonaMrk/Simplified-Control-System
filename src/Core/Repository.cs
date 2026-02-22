@@ -19,6 +19,19 @@ namespace Core
             Directory.CreateDirectory(Path.Combine(RepoPath, ".gitlite"));
             Directory.CreateDirectory(Path.Combine(RepoPath, ".gitlite", "objects"));
             Directory.CreateDirectory(Path.Combine(RepoPath, ".gitlite", "refs"));
+
+            // Branch references folder
+            Directory.CreateDirectory(Path.Combine(RepoPath, ".gitlite", "refs", "heads"));
+
+            // I created default branch "main" if it doesn't exist
+            string mainRefPath = Path.Combine(RepoPath, ".gitlite", "refs", "heads", "main");
+            if (!File.Exists(mainRefPath))
+            {
+                File.WriteAllText(mainRefPath, "");
+            }
+
+            // HEAD will store the current branch name
+            File.WriteAllText(Path.Combine(RepoPath, ".gitlite", "HEAD"), "main");
         }
 
         public Commit CreateCommit(string message)
