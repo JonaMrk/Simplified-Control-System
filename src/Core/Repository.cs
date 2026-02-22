@@ -165,6 +165,41 @@ namespace Core
             WriteCurrentBranch(branchName);
         }
 
+        private string GetIndexPath()
+        {
+            return Path.Combine(RepoPath, ".gitlite", "index");
+        }
+        
+        public void AddFile(string relativePath)
+        {
+            string indexPath = GetIndexPath();
+        
+            if (!File.Exists(indexPath))
+                File.WriteAllText(indexPath, "");
+        
+            string[] lines = File.ReadAllLines(indexPath);
+        
+            foreach (string line in lines)
+            {
+                if (line.Trim() == relativePath.Trim())
+                    return; // already tracked
+            }
+        
+            File.AppendAllText(indexPath, relativePath.Trim() + Environment.NewLine);
+        }
+        
+        public string[] ListTrackedFiles()
+        {
+            string indexPath = GetIndexPath();
+        
+            if (!File.Exists(indexPath))
+                return Array.Empty<string>();
+        
+            string[] lines = File.ReadAllLines(indexPath);
+        
+            return Array.FindAll(lines, l => !string.IsNullOrWhiteSpace(l));
+        }
+
         public void PrintLog()
         {
             string branchName = ReadCurrentBranch();
