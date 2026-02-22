@@ -71,22 +71,45 @@ namespace Core
             File.WriteAllText(headPath, commitId);
         }
 
+        private Commit LoadCommit(string commitId)
+        {
+            string path = Path.Combine(RepoPath, ".gitlite", "objects", commitId + ".txt");
+
+            if (!File.Exists(path))
+                return null;
+
+            string[] lines = File.ReadAllLines(path);
+
+            string parent = lines[1].Replace("Parent: ", "");
+            string message = lines[2].Replace("Message: ", "");
+
+            return new Commit(commitId, parent, message);
+        }
+
         public void PrintLog()
         {
-            string objectsPath = Path.Combine(RepoPath, ".gitlite", "objects");
+            string currentId = ReadHead();
 
-            if (!Directory.Exists(objectsPath))
+            if (string.IsNullOrEmpty(currentId))
             {
                 Console.WriteLine("No commits found.");
                 return;
             }
 
-            string[] commitFiles = Directory.GetFiles(objectsPath, "*.txt");
-
-            foreach (string file in commitFiles)
+            while (!string.IsNullOrEmpty(currentId))
             {
+                Commit commit = LoadCommit(currentId);
+
+                if (commit == null)
+                    break;
+
                 Console.WriteLine("------------");
-                Console.WriteLine(File.ReadAllText(file));
+                Console.WriteLine("Commit ID: " + commit.CommitId);
+                Console.WriteLine("Parent: " + commit.ParentCommitId);
+                Console.WriteLine("Message: " + commit.Message);
+                Console.WriteLine("Timestamp: " + commit.Timestamp);
+
+                currentId = commit.ParentCommitId;
             }
         }
     }
