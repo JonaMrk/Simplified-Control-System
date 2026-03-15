@@ -1,0 +1,7 @@
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\bin\Debug\GitLite.exe.config
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\bin\Debug\GitLite.exe
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\bin\Debug\GitLite.pdb
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\obj\Debug\GitLite.csproj.AssemblyReference.cache
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\obj\Debug\GitLite.csproj.CoreCompileInputs.cache
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\obj\Debug\GitLite.exe
+C:\Users\jonam\source\repos\Simplified-Control-System\src\GitLite\GitLite\obj\Debug\GitLite.pdb
