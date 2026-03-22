@@ -32,8 +32,8 @@ namespace GitLite
 
             // HEAD will store the current branch name
             File.WriteAllText(Path.Combine(RepoPath, ".gitlite", "HEAD"), "main");
-            
-             // Create index file for file tracking
+
+            // Create index file for file tracking
             string indexPath = Path.Combine(RepoPath, ".gitlite", "index");
             if (!File.Exists(indexPath))
             {
@@ -45,15 +45,15 @@ namespace GitLite
         {
             string branchName = ReadCurrentBranch();
             string parentCommitId = ReadBranchHeadCommitId(branchName);
-            
+
             string content = message + DateTime.Now.ToString("O");
             string commitId = Hasher.ComputeHash(content);
-            
+
             Commit commit = new Commit(commitId, parentCommitId, message);
-            
+
             SaveCommit(commit);
             WriteBranchHeadCommitId(branchName, commitId);
-            
+
             return commit;
         }
 
@@ -76,10 +76,20 @@ namespace GitLite
             foreach (string file in trackedFiles)
             {
                 fileContent += file + Environment.NewLine;
+
+                string sourcePath = Path.Combine(RepoPath, file);
+                string safeName = SanitizePath(file);
+                string destPath = Path.Combine(objectsPath, commit.CommitId + "_" + safeName);
+
+                if (File.Exists(sourcePath))
+                {
+                    File.Copy(sourcePath, destPath, true);
+                }
             }
 
             File.WriteAllText(commitFilePath, fileContent);
         }
+
         private string GetHeadPath()
         {
             return Path.Combine(RepoPath, ".gitlite", "HEAD");
@@ -102,12 +112,12 @@ namespace GitLite
         {
             File.WriteAllText(GetHeadPath(), branchName);
         }
-        
+
         private string GetBranchRefPath(string branchName)
         {
             return Path.Combine(GetHeadsDir(), branchName);
         }
-        
+
         private string ReadBranchHeadCommitId(string branchName)
         {
             string refPath = GetBranchRefPath(branchName);
@@ -115,7 +125,7 @@ namespace GitLite
                 return "";
             return File.ReadAllText(refPath).Trim();
         }
-        
+
         private void WriteBranchHeadCommitId(string branchName, string commitId)
         {
             string refPath = GetBranchRefPath(branchName);
@@ -140,27 +150,27 @@ namespace GitLite
         public void CreateBranch(string branchName)
         {
             Directory.CreateDirectory(GetHeadsDir());
-        
+
             string refPath = GetBranchRefPath(branchName);
             if (File.Exists(refPath))
                 return;
-        
+
             string currentBranch = ReadCurrentBranch();
             string currentCommitId = ReadBranchHeadCommitId(currentBranch);
-        
+
             File.WriteAllText(refPath, currentCommitId);
         }
-        
+
         public string[] ListBranches()
         {
             string dir = GetHeadsDir();
             if (!Directory.Exists(dir))
                 return Array.Empty<string>();
-        
+
             string[] files = Directory.GetFiles(dir);
             for (int i = 0; i < files.Length; i++)
                 files[i] = Path.GetFileName(files[i]);
-        
+
             return files;
         }
 
@@ -180,12 +190,45 @@ namespace GitLite
             }
 
             WriteCurrentBranch(branchName);
+
+            string commitId = ReadBranchHeadCommitId(branchName);
+
+            if (string.IsNullOrEmpty(commitId))
+            {
+                Console.WriteLine("Switched to branch: " + branchName);
+                Console.WriteLine("Branch has no commits yet.");
+                return;
+            }
+
+            string[] trackedFiles = ListTrackedFiles();
+            string objectsPath = Path.Combine(RepoPath, ".gitlite", "objects");
+
+            foreach (string file in trackedFiles)
+            {
+                string safeName = SanitizePath(file);
+                string sourcePath = Path.Combine(objectsPath, commitId + "_" + safeName);
+                string destPath = Path.Combine(RepoPath, file);
+
+                if (!File.Exists(sourcePath))
+                {
+                    Console.WriteLine("Missing file in branch commit: " + file);
+                    continue;
+                }
+
+                File.Copy(sourcePath, destPath, true);
+            }
+
             Console.WriteLine("Switched to branch: " + branchName);
         }
 
         private string GetIndexPath()
         {
             return Path.Combine(RepoPath, ".gitlite", "index");
+        }
+
+        private string SanitizePath(string path)
+        {
+            return path.Replace("\\", "_").Replace("/", "_");
         }
 
         public void AddFile(string relativePath)
@@ -227,12 +270,12 @@ namespace GitLite
         public string[] ListTrackedFiles()
         {
             string indexPath = GetIndexPath();
-        
+
             if (!File.Exists(indexPath))
                 return Array.Empty<string>();
-        
+
             string[] lines = File.ReadAllLines(indexPath);
-        
+
             return Array.FindAll(lines, l => !string.IsNullOrWhiteSpace(l));
         }
 
@@ -262,6 +305,123 @@ namespace GitLite
 
                 currentId = commit.ParentCommitId;
             }
+        }
+
+        public string GetFileFromLastCommit(string fileName)
+        {
+            string branch = ReadCurrentBranch();
+            string commitId = ReadBranchHeadCommitId(branch);
+
+            if (string.IsNullOrEmpty(commitId))
+                return null;
+
+            string safeName = SanitizePath(fileName);
+            string path = Path.Combine(RepoPath, ".gitlite", "objects", commitId + "_" + safeName);
+
+            if (!File.Exists(path))
+                return null;
+
+            return path;
+        }
+
+        public void DiffFile(string fileName)
+        {
+            string workingPath = Path.Combine(RepoPath, fileName);
+
+            if (!File.Exists(workingPath))
+            {
+                Console.WriteLine("File does not exist.");
+                return;
+            }
+
+            string oldFilePath = GetFileFromLastCommit(fileName);
+
+            if (oldFilePath == null)
+            {
+                Console.WriteLine("No previous version found.");
+                return;
+            }
+
+            DiffEngine diff = new DiffEngine();
+            var result = diff.Compare(oldFilePath, workingPath);
+
+            foreach (var line in result)
+            {
+                Console.WriteLine(line);
+            }
+        }
+
+        public void CheckoutLastCommit()
+        {
+            string branch = ReadCurrentBranch();
+            string commitId = ReadBranchHeadCommitId(branch);
+
+            if (string.IsNullOrEmpty(commitId))
+            {
+                Console.WriteLine("No commits to checkout.");
+                return;
+            }
+
+            string objectsPath = Path.Combine(RepoPath, ".gitlite", "objects");
+
+            string[] trackedFiles = ListTrackedFiles();
+
+            foreach (string file in trackedFiles)
+            {
+                string safeName = SanitizePath(file);
+
+                string sourcePath = Path.Combine(objectsPath, commitId + "_" + safeName);
+                string destPath = Path.Combine(RepoPath, file);
+
+                if (!File.Exists(sourcePath))
+                {
+                    Console.WriteLine("Missing file in commit: " + file);
+                    continue;
+                }
+
+                File.Copy(sourcePath, destPath, true);
+                Console.WriteLine("Restored: " + file);
+            }
+
+            Console.WriteLine("Checkout complete.");
+        }
+
+        public void CheckoutCommit(string commitId)
+        {
+            if (string.IsNullOrWhiteSpace(commitId))
+            {
+                Console.WriteLine("Invalid commit ID.");
+                return;
+            }
+
+            string commitFilePath = Path.Combine(RepoPath, ".gitlite", "objects", commitId + ".txt");
+
+            if (!File.Exists(commitFilePath))
+            {
+                Console.WriteLine("Commit does not exist.");
+                return;
+            }
+
+            string[] trackedFiles = ListTrackedFiles();
+            string objectsPath = Path.Combine(RepoPath, ".gitlite", "objects");
+
+            foreach (string file in trackedFiles)
+            {
+                string safeName = SanitizePath(file);
+                string sourcePath = Path.Combine(objectsPath, commitId + "_" + safeName);
+                string destPath = Path.Combine(RepoPath, file);
+
+                if (!File.Exists(sourcePath))
+                {
+                    Console.WriteLine("Missing file in commit: " + file);
+                    continue;
+                }
+
+                File.Copy(sourcePath, destPath, true);
+                Console.WriteLine("Restored: " + file);
+            }
+
+            Console.WriteLine("Checked out commit: " + commitId);
         }
     }
 }

@@ -48,6 +48,45 @@ namespace GitLite
                     repo.PrintLog();
                     break;
 
+                case "diff":
+                    Console.WriteLine("Enter file name:");
+                    string file = Console.ReadLine();
+
+                    repo.DiffFile(file);
+                    break;
+
+                case "checkout":
+                    repo.CheckoutLastCommit();
+                    break;
+
+                case "checkout-commit":
+                    Console.WriteLine("Enter commit ID:");
+                    string commitId = Console.ReadLine();
+
+                    repo.CheckoutCommit(commitId);
+                    break;
+
+                case "branch":
+                    Console.WriteLine("Enter branch name:");
+                    string branchName = Console.ReadLine();
+                    repo.CreateBranch(branchName);
+                    Console.WriteLine("Branch created.");
+                    break;
+
+                case "checkout-branch":
+                    Console.WriteLine("Enter branch name:");
+                    string branchToCheckout = Console.ReadLine();
+                    repo.CheckoutBranch(branchToCheckout);
+                    break;
+
+                case "branches":
+                    var branches = repo.ListBranches();
+                    foreach (var b in branches)
+                    {
+                        Console.WriteLine(b);
+                    }
+                    break;
+
                 default:
                     Console.WriteLine("Unknown command.");
                     break;
